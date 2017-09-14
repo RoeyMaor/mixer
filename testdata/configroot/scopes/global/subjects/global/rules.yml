@@ -74,20 +74,57 @@ rules:
       log:
         descriptor_name: accesslog.common
         template_expressions:
-           originIp: origin.ip
-           sourceUser: origin.user
-           timestamp: request.time
+           origin.ip: origin.ip
+           origin.uid: origin.uid
+           origin.user: origin.user
+           request.time: request.time
            method: request.method
-           url: request.path
-           protocol: request.scheme
-           responseCode: response.code
-           responseSize: response.size
+           request.path: request.path
+           request.scheme: request.scheme
+           response.code: response.code
+           response.size: response.size
         labels:
-           originIp: origin.ip
-           sourceUser: origin.user
-           timestamp: request.time
-           method: request.method
-           url: request.path
-           protocol: request.scheme
-           responseCode: response.code
-           responseSize: response.size
+           origin.ip: origin.ip
+           origin.uid: origin.uid
+           origin.user: origin.user
+           request.path: request.path
+           request.id: request.id
+           request.host: request.host
+           request.reason: request.reason
+           request.referer: request.referer
+           request.scheme: request.scheme
+           request.size: request.size
+           request.time: request.time
+           request.headers: request.headers # STRING_MAP
+           response.duration: response.duration
+           response.headers: response.headers
+           response.latency: response.latency
+           response.time: response.time
+           response.code: response.code
+           response.size: response.size
+           #method: request.method
+           source.uid: source.uid
+           target.uid: target.uid
+           connection.id: connection.id
+           connection.received.bytes: connection.received.bytes
+           connection.received.bytes_total: connection.received.bytes_total
+           connection.sent.bytes: connection.sent.bytes
+           connection.sent.bytes_total: connection.sent.bytes_total
+           connection.duration: connection.duration
+           connection.protocol: connection.protocol
+           connection.timestamp: connection.timestamp
+           connection.time: connection.time
+           source.ip: source.ip
+           source.labels: source.labels
+           source.name: source.name
+           source.namespace: source.namespace
+           source.service: source.service
+           source.serviceAccount: source.serviceAccount
+           target.ip: target.ip
+           target.labels: target.labels
+           target.name: target.name
+           target.namespace: target.namespace
+           target.service: target.service
+           target.serviceAccount: target.serviceAccount
+
+
