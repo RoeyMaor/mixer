@@ -27,7 +27,9 @@ import (
 	"istio.io/mixer/adapter/statsd"
 	"istio.io/mixer/adapter/stdioLogger"
 	"istio.io/mixer/adapter/token"
+	"istio.io/mixer/adapter/l7collector"
 	"istio.io/mixer/pkg/adapter"
+
 )
 
 // Inventory returns the inventory of all available adapters.
@@ -45,5 +47,6 @@ func Inventory() []adapter.RegisterFn {
 		kubernetes.Register,
 		noop.Register,
 		token.Register,
+		l7collector.Register,
 	}
 }

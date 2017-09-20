@@ -4,15 +4,30 @@ adapters:
     kind: attributes
     impl: token
     params:
+      issuers:
+      -  name: "local" #(needs to match the value of the token's "iss" claim)
+         pubKeyUrl: "http://jwktestserver:21356/keys"
+         claimNames:
+          - "name"
+          - "locations.us.ca"
+          - "servers.haifa"
+         claimRenames:
+          haifa: servers.haifa #(ability to rename requested claims in the output)
   - name: default
     kind: quotas
     impl: memQuota
     params:
-  - name: default
-    impl: stdioLogger
+# - name: default
+#   impl: stdioLogger
+#   params:
+#     logStream: STDERR
+#     omitEmptyFields: false
+  - name: l7collector
+    kind: access-logs
+    impl: l7collector
     params:
       logStream: STDERR
-      omitEmptyFields: true
+      omitEmptyFields: false
   - name: prometheus
     kind: metrics
     impl: prometheus

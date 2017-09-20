@@ -25,6 +25,7 @@ import (
 
 	"istio.io/mixer/adapter/stdioLogger/config"
 	"istio.io/mixer/pkg/adapter"
+	"github.com/golang/glog"
 )
 
 type (
@@ -63,10 +64,12 @@ func Register(r adapter.Registrar) {
 }
 
 func (builder) NewApplicationLogsAspect(_ adapter.Env, cfg adapter.Config) (adapter.ApplicationLogsAspect, error) {
+	glog.Warningf("glogIndigobLUEAPPSTD")
 	return newLogger(cfg, newZapLogger)
 }
 
 func (builder) NewAccessLogsAspect(_ adapter.Env, cfg adapter.Config) (adapter.AccessLogsAspect, error) {
+	glog.Warningf("glogIndigobLUEACCSTD")
 	return newLogger(cfg, newZapLogger)
 }
 

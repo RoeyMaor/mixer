@@ -205,14 +205,52 @@ logs:
     payload_format: TEXT
     log_template: '{{or (.originIp) "-"}} - {{or (.sourceUser) "-"}} [{{or (.timestamp.Format "02/Jan/2006:15:04:05 -0700") "-"}}] "{{or (.method) "-"}} {{or (.url) "-"}} {{or (.protocol) "-"}}" {{or (.responseCode) "-"}} {{or (.responseSize) "-"}}'
     labels:
-      originIp: 6 # IP_ADDRESS
-      sourceUser: 1 # STRING
-      timestamp: 5 # TIMESTAMP
-      method: 1 # STRING
-      url: 1 # STRING
-      protocol: 1 # STRING
-      responseCode: 2 # INT64
-      responseSize: 2 # INT64
+      origin.ip: 6 # IP_ADDRESS
+      origin.uid: 1 #STRING
+      origin.user: 1 # STRING
+      request.path: 1 # STRING
+      request.id: 1 #STRING
+      request.host: 1 #STRING
+      request.reason: 1 #STRING
+      request.referer: 1 #STRING
+      request.scheme: 1 #STRING
+      request.size: 2 #INT64
+      request.time: 5 # TIMESTAMP
+      request.method: 1 # STRING
+      request.useragent: 1 #STRING
+      request.headers: 11 # STRING_MAP
+      response.duration: 10 #DURATION
+      response.headers: 11 #STRING_MAP
+      response.latency: 10 #DURATION
+      response.time: 5 #TIMESTAMP
+      response.code: 2 # INT64
+      response.size: 2 # INT64
+      source.uid: 1 #STRING
+      target.uid: 1 #STRING
+      connection.id: 1 #STRING
+      connection.received.bytes: 2 #INT64
+      connection.received.bytes_total: 2 #INT64
+      connection.sent.bytes: 2 #INT64
+      connection.sent.bytes_total: 2 #INT64
+      connection.duration: 10 #DURATION
+      connection.protocol: 1 #STRING
+      connection.timestamp: 5 #TIMESTAMP
+      connection.time: 5 #TIMESTAMP
+      #kubernetes info
+      source.ip: 6 #IP_ADDRESS
+      source.labels: 11 # STRING_MAP
+      source.name: 1 # STRING
+      source.namespace: 1 #STRING
+      source.service: 1 #STRING
+      source.serviceAccount: 1 #STRING
+      target.ip: 6 #IP_ADDRESS
+      target.labels: 11 # STRING_MAP
+      target.name: 1 #STRING
+      target.namespace: 1 #STRING
+      target.service: 1 #STRING
+      target.serviceAccount: 1 #STRING
+
+
   - name: accesslog.combined
     display_name: Apache Combined Log Format
     payload_format: TEXT
@@ -227,4 +265,3 @@ logs:
       responseCode: 2 # INT64
       responseSize: 2 # INT64
       referer: 1 # STRING
-      userAgent: 1 # STRING
