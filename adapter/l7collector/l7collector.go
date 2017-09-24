@@ -31,16 +31,17 @@ import (
 	"bytes"
 	"io/ioutil"
 	"encoding/json"
+	"fmt"
 )
 
 const(
-	GW_API_URL = "http://169.46.62.146:9000/api/v1/"
+	GW_API_URL = "http://169.46.62.146:9000/"
 	TENANT_ID_ENV = "TENANT_ID"
-	TENANT_ID = "3"
-	CRN_ENV = "CRN"
-	CRN = "3"
-	URI = "tenant/{tenantId}/resourceGroup/{CRN}/collection/{collectionId}"
-	REQUEST_TIMEOUT = 3 * time.Second
+	CRN_ENV = "RESOURCE_GROUP_CRN"
+	URI = "api/v1/tenant/{tenantId}/resourceGroup/{CRN}/collection/{collectionId}"
+	REQUEST_TIMEOUT = 10 * time.Second
+	DATAGW_SERVICE_PORT_ENV = "DATA_GATEWAY_SERVICE_PORT"
+	DATAGW_SERVICE_HOST_ENV = "DATA_GATEWAY_SERVICE_HOST"
 )
 
 var collectionIDs = map[string]string {
@@ -102,23 +103,27 @@ func (l *collector) Log(entries []adapter.LogEntry) error {
 }
 
 func (l *collector) LogAccess(entries []adapter.LogEntry) error {
-	memo,err := l.get_current_memo(entries)
+	memos,memoCollectionIDs,err := l.get_current_memos(entries)
 	if err != nil{
 		glog.Warningf("request resulted in an error when creating memo: %v",err.Error())
 		return err
 	}
-	//collectionID,err := l.get_current_collectionID(entries)
-	dataGWCollectGet("6")
-	dataGWCollectPost("6",memo)
-	dataGWCollectGet("6")
+	for i, memo := range memos{
+		err = dataGWCollectPost(memoCollectionIDs[i],memo)
+		if err != nil{
+			glog.Errorf(err.Error())
+		}
+	}
 	return nil
 }
 
-func (l *collector) get_current_memo(entries []adapter.LogEntry) ([]byte,error) {
-	memo := make([]map[string]interface{},1)
-	memo[0] = make(map[string]interface{})
+func (l *collector) get_current_memos(entries []adapter.LogEntry) ([][]byte, []string, error) {
+	memos := make([][]byte,0)
+	memoCollectionIDs := make([]string,0)
 	includeEmpty := !l.omitEmpty
 	for _, entry := range entries {
+		memo := make([]map[string]interface{},1)
+		memo[0] = make(map[string]interface{})
 		if includeEmpty || entry.LogName != "" {
 			memo[0]["logName"] = entry.LogName
 		}
@@ -130,6 +135,13 @@ func (l *collector) get_current_memo(entries []adapter.LogEntry) ([]byte,error) 
 		}
 		if includeEmpty || len(entry.Labels) > 0 {
 			memo[0]["labels"] = entry.Labels
+			if _, exists := entry.Labels["source.name"] ; !exists{
+				memoCollectionIDs = append(memoCollectionIDs, collectionIDs["ingress"])
+			} else if _, exists := entry.Labels["target.name"] ; !exists {
+				memoCollectionIDs = append(memoCollectionIDs, collectionIDs["external"])
+			} else {
+				memoCollectionIDs = append(memoCollectionIDs, collectionIDs["internal"])
+			}
 		}
 		if includeEmpty || len(entry.TextPayload) > 0 {
 			memo[0]["textPayload"] = entry.TextPayload
@@ -137,10 +149,13 @@ func (l *collector) get_current_memo(entries []adapter.LogEntry) ([]byte,error) 
 		if includeEmpty || len(entry.StructPayload) > 0 {
 			memo[0]["structPayload"] = entry.StructPayload
 		}
+		byt, _ := json.Marshal(memo)
+		memos = append(memos, byt)
 	}
-	byt, _ := json.Marshal(memo)
-	return byt,nil
+
+	return memos,memoCollectionIDs,nil
 }
+
 
 /*
 func (l *collector) get_current_collectionID(entries []adapter.LogEntry) (string,error) {
@@ -176,19 +191,28 @@ func createDataGWURI(tenantID string, crn string, collectionID string) string{
 }
 
 func dataGWCollectGet(collectionID string) error{
-	tenantID := TENANT_ID
-	if os.Getenv(TENANT_ID_ENV) != ""{
-		tenantID = os.Getenv(TENANT_ID_ENV)
+	tenantID := os.Getenv(TENANT_ID_ENV)
+	if tenantID == ""{
+		return fmt.Errorf("l7Collector Error: %v env var undefined",TENANT_ID_ENV)
 	}
-	crn := CRN
-	if os.Getenv(CRN_ENV) != ""{
-		crn = os.Getenv(CRN_ENV)
+	crn := os.Getenv(CRN_ENV)
+	if crn == ""{
+		return fmt.Errorf("l7Collector Error: %v env var undefined",CRN_ENV)
 	}
+	host := os.Getenv(DATAGW_SERVICE_HOST_ENV)
+	if host == ""{
+		return fmt.Errorf("l7Collector Error: %v env var undefined",DATAGW_SERVICE_HOST_ENV)
+	}
+	port := os.Getenv(DATAGW_SERVICE_PORT_ENV)
+	if port == ""{
+		return fmt.Errorf("l7Collector Error: %v env var undefined",DATAGW_SERVICE_PORT_ENV)
+	}
+
 	client := &http.Client{
 		Timeout: REQUEST_TIMEOUT,
 	}
 
-	url := GW_API_URL+createDataGWURI(tenantID,crn,collectionID)
+	url := "http://"+host+":"+port+"/"+createDataGWURI(tenantID,crn,collectionID)
 
 	resp, err := client.Get(url)
 	if err != nil {
@@ -203,16 +227,24 @@ func dataGWCollectGet(collectionID string) error{
 
 func dataGWCollectPost(collectionID string, memo []byte) error{
 
-	tenantID := TENANT_ID
-	if os.Getenv(TENANT_ID_ENV) != ""{
-		tenantID = os.Getenv(TENANT_ID_ENV)
+	tenantID := os.Getenv(TENANT_ID_ENV)
+	if tenantID == ""{
+		return fmt.Errorf("l7Collector Error: %v env var undefined",TENANT_ID_ENV)
 	}
-	crn := CRN
-	if os.Getenv(CRN_ENV) != ""{
-		crn = os.Getenv(CRN_ENV)
+	crn := os.Getenv(CRN_ENV)
+	if crn == ""{
+		return fmt.Errorf("l7Collector Error: %v env var undefined",CRN_ENV)
+	}
+	host := os.Getenv(DATAGW_SERVICE_HOST_ENV)
+	if host == ""{
+		return fmt.Errorf("l7Collector Error: %v env var undefined",DATAGW_SERVICE_HOST_ENV)
+	}
+	port := os.Getenv(DATAGW_SERVICE_PORT_ENV)
+	if port == ""{
+		return fmt.Errorf("l7Collector Error: %v env var undefined",DATAGW_SERVICE_PORT_ENV)
 	}
 
-	url := GW_API_URL+createDataGWURI(tenantID,crn,collectionID)
+	url := "http://"+host+":"+port+"/"+createDataGWURI(tenantID,crn,collectionID)
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(memo))
 	req.Header.Set("Content-Type", "application/json")
